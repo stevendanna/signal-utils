@@ -1,0 +1,13 @@
+PATH
+  remote: .
+  specs:
+    signal-utils (1.0)
+
+GEM
+  specs:
+
+PLATFORMS
+  ruby
+
+DEPENDENCIES
+  signal-utils!

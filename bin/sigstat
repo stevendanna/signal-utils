@@ -1,0 +1,63 @@
+#!/usr/bin/env ruby
+
+# This file is part of signal-utils.
+
+# signal-utils is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+
+# signal-utils is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+
+# You should have received a copy of the GNU General Public License
+# along with signal-utils.  If not, see <http://www.gnu.org/licenses/>.
+
+require 'signal-utils'
+
+pid = ARGV[0]
+blocked = []
+ignored = []
+caught = []
+
+if pid.nil?
+  STDERR.puts "usage: sigstat PID"
+  STDERR.puts "Please provide a process ID."
+  exit
+end
+
+begin
+  status = File.read("/proc/#{pid}/status") 
+rescue Errno::ENOENT
+  STDERR.puts "No such process #{pid} or no procfs"
+  exit 1
+end
+
+status.each_line do |line|
+  parts = line.split(':')
+  case parts[0]
+  when "SigBlk"
+    blocked = Signal::Mask.decode(parts[1].strip)
+  when "SigIgn"
+    ignored = Signal::Mask.decode(parts[1].strip)
+  when "SigCgt"
+    caught = Signal::Mask.decode(parts[1].strip)
+  end
+end
+
+all = (blocked + ignored + caught).sort
+all.each do |s|
+  status = case
+           when blocked.include?(s)
+             "BLOCKED"
+           when ignored.include?(s)
+             "IGNORED"
+           when caught.include?(s)
+             "CAUGHT"
+           end
+  
+  puts Signal.signame(s).to_s + " " + status
+end
+  
